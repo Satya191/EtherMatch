@@ -53,8 +53,8 @@ const wagmiConfig = createConfig(
 const queryClient = new QueryClient();
 
 const lensConfig: LensConfig = {
-  params: { profile: { metadataSource: "SkillXChange" as AppId } },
-  environment: development, // or production
+  params: { profile: { metadataSource: "SkillXChange" as AppId} },
+  environment: production, // or production
   bindings: bindings(wagmiConfig),
   ...appConfig.lens,
 };

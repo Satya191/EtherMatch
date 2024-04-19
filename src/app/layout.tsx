@@ -62,11 +62,6 @@ export default function RootLayout({
     </NavigationMenuItem>
 
     </div>
-    <NavigationMenuItem style={{ float: 'right'}}>
-
-        <WelcomeToLens />
-
-    </NavigationMenuItem>
 
 
     </NavigationMenuList>

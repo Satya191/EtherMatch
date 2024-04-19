@@ -51,6 +51,7 @@ export function ProfileCard({ profile, children }: ProfileCardProps) {
     const { execute: unfollow, error: unfollowError, loading: unfollowLoading } = useUnfollow(); //getting function execute, destructuring
 
   const { metadata } = profile;
+  if(metadata?.appId == null) {return <p>appId is null, bio: {metadata?.bio}</p>}
 
   const handleFollowOrUnfollow = async () => {
     if (profile.operations.canFollow == TriStateValue.Yes) {
@@ -97,7 +98,7 @@ export function ProfileCard({ profile, children }: ProfileCardProps) {
 
       <hr />
       <ProfileTickers stats={profile.stats} />
-      {(!isConnected || !session || !(session.type === SessionType.WithProfile) || !session.authenticated) ? <p>Please sign in to follow</p> :
+      {(!isConnected || !session || !(session.type === SessionType.WithProfile)) ? <p>Please sign in and register to follow</p> :
       <Button style={{ marginTop: '5%'}}
                 onClick={handleFollowOrUnfollow} 
                 disabled={followLoading || unfollowLoading || !(profile.operations.canUnfollow || profile.operations.canFollow == TriStateValue.Yes)}

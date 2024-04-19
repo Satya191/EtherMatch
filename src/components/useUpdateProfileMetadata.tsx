@@ -1,56 +1,199 @@
-import { useSetProfileMetadata } from "@lens-protocol/react-web";
-import { profile, MetadataAttributeType } from "@lens-protocol/metadata";
-import { ThirdwebStorage,  } from "@thirdweb-dev/storage";
+import React from 'react';
+import { useForm, useFieldArray, SubmitHandler } from 'react-hook-form';
+import { MetadataAttributeType, profile } from '@lens-protocol/metadata';
+import { Profile, useSetProfileMetadata } from '@lens-protocol/react-web';
+import { SessionType, useSession as useLensSession, AppId } from "@lens-protocol/react-web";
 
-// Define the interface for the metadata parameters
-interface MetadataParams {
-    name: string;
-    bio: string;
-    jsonContent: string; // Make sure this type suits your data structure
+import { useIrysUploadHandler } from '@/utils/useIrysUploader';
+
+interface FormInputs {
+  name: string;
+  bio: string;
+  skills: { id: string; name: string }[];
+  wantToLearns: { id: string; name: string }[];
+  sponsored: boolean;
 }
 
-export function useUpdateProfileMetadata() {
+type UpdateProfileFormProps = {
+  activeProfile: Profile;
+};
 
-    const { execute, data, loading, error } = useSetProfileMetadata();
+function UpdateProfileForm({ activeProfile }: UpdateProfileFormProps) {
+  const { execute: update, error, loading } = useSetProfileMetadata();
+  const uploadMetadata = useIrysUploadHandler();
+  const { control, register, handleSubmit } = useForm<FormInputs>({
+    defaultValues: {
+      name: activeProfile.metadata?.displayName ?? '',
+      bio: activeProfile.metadata?.bio ?? '',
+      skills: [],
+      wantToLearns: [],
+      sponsored: true
+    }
+  });
 
+  const { fields: skillsFields, append: appendSkill, remove: removeSkill } = useFieldArray({
+    control,
+    name: 'skills'
+  });
 
-    const uploader = new StorageUploader();
+  const { fields: wantToLearnsFields, append: appendWantToLearn, remove: removeWantToLearn } = useFieldArray({
+    control,
+    name: 'wantToLearns'
+  });
 
-    const storage = new ThirdwebStorage({
-        secretKey: process.env.THIRDWEB_CLIENT_KEY, 
-        uploader
+  const onSubmit: SubmitHandler<FormInputs> = async (data) => {
+    const metadata = profile({
+      appId: 'SkillXChange' as AppId,
+      name: data.name,
+      bio: data.bio,
+      attributes: [
+        {
+          key: 'skills',
+          value: JSON.stringify(data.skills.map(skill => skill.name)),
+          type: MetadataAttributeType.JSON,
+        },
+        {
+          key: 'wantToLearns',
+          value: JSON.stringify(data.wantToLearns.map(wantToLearn => wantToLearn.name)),
+          type: MetadataAttributeType.JSON,
+        },
+      ],
     });
 
-    const updateMetadata = async ({ name, bio, jsonContent }: MetadataParams): Promise<any> => {
-        const metadata = profile({
-            name,
-            bio,
-            attributes: [ {
-                key: "appStuff",
-                type: MetadataAttributeType.JSON,
-                value: jsonContent, // Spread the JSON content directly into the metadata object
-            }
-            ],
-        });
+    const metadataURI = await uploadMetadata(metadata);
 
-        // Simulated function for uploading to IPFS
-        const uri = await uploadToIpfs(metadata); // Ensure you replace with actual IPFS upload logic
+    const result = await update({
+      metadataURI,
+      sponsored: data.sponsored,
+    });
 
-        try {
-            const result = await execute({ metadataURI: uri });
-            return result; // Simplifying return, handle as needed
-        } catch (err) {
-            console.error("Error updating metadata:", err);
-            return err; // Returning error for handling in the component
-        }
-    };
+    if (result.isFailure()) {
+      console.log(result.error.message);
+      return;
+    }
 
-    return { updateMetadata, data, loading, error };
+    const completion = await result.value.waitForCompletion();
+
+    if (completion.isFailure()) {
+      console.log(completion.error.message);
+      return;
+    }
+
+    console.log('Profile updated');
+    console.log('this function profile metadata appId (also current session profile, useSession function called before change profile metadata): ', activeProfile.metadata?.bio);
+  };
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)}>
+      <div style={{ margin: '20px' }}>
+        <label>
+          Name:
+          <input
+            type="text"
+            placeholder="Your name"
+            required
+            disabled={loading}
+            {...register('name')}
+          />
+        </label>
+      </div>
+
+      <div style={{ margin: '20px' }}>
+        <label>
+          Bio:
+          <textarea
+            rows={3}
+            placeholder="Write a line about you"
+            required
+            style={{ resize: 'none' }}
+            disabled={loading}
+            {...register('bio')}
+          ></textarea>
+        </label>
+      </div>
+
+      <div style={{ margin: '20px' }}>
+        <label>
+          Skills:
+          <input
+            type="text"
+            placeholder="Add a skill and press Enter"
+            onKeyPress={e => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                if (e.currentTarget.value.trim() !== '') {
+                  appendSkill({ id: Date.now().toString(), name: e.currentTarget.value.trim() });
+                  e.currentTarget.value = '';
+                }
+              }
+            }}
+          />
+          {skillsFields.map((item, index) => (
+            <div key={item.id} style={{ marginTop: '5px' }}>
+              {item.name}
+              <button type="button" onClick={() => removeSkill(index)} style={{ marginLeft: '10px' }}>Remove</button>
+            </div>
+          ))}
+        </label>
+      </div>
+
+      <div style={{ margin: '20px' }}>
+        <label>
+          Want to Learns:
+          <input
+            type="text"
+            placeholder="Add what you want to learn and press Enter"
+            onKeyPress={e => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                if (e.currentTarget.value.trim() !== '') {
+                  appendWantToLearn({ id: Date.now().toString(), name: e.currentTarget.value.trim() });
+                  e.currentTarget.value = '';
+                }
+              }
+            }}
+          />
+          {wantToLearnsFields.map((item, index) => (
+            <div key={item.id} style={{ marginTop: '5px' }}>
+              {item.name}
+              <button type="button" onClick={() => removeWantToLearn(index)} style={{ marginLeft: '10px' }}>Remove</button>
+            </div>
+          ))}
+        </label>
+      </div>
+
+      <div style={{ margin: '20px' }}>
+        <label>
+          <input
+            type="checkbox"
+            {...register('sponsored')}
+          />
+          Sponsored
+        </label>
+      </div>
+
+      <div style={{ margin: '20px' }}>
+        <button type="submit" disabled={loading}>
+          {loading ? 'Updating...' : 'Update'}
+        </button>
+      </div>
+
+      {error && <p>{error.message}</p>}
+    </form>
+  );
 }
 
-// Mock function for uploading to IPFS
-async function uploadToIpfs(metadata: any): Promise<string> {
-    // Implement your IPFS upload logic here
-    console.log("Uploading metadata:", metadata);
-    return "https://fakeipfsurl.com/metadata.json"; // Example URL
+export function UseSetProfileMetadata() {
+  //pass in session instead of calling uselenssession again.
+  const { data: session } = useLensSession();
+  if (!session || !session.authenticated || !(session.type === SessionType.WithProfile)) return null;
+
+  return (
+    <div>
+      <h1>Create your profile!</h1>
+      <div>
+        <UpdateProfileForm activeProfile={session.profile} />
+      </div>
+    </div>
+  );
 }

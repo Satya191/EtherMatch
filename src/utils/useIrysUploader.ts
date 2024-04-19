@@ -1,0 +1,78 @@
+import { Web3Provider } from '@ethersproject/providers';
+import { WebIrys } from '@irys/sdk';
+import { Uploader } from '@lens-protocol/react-web';
+import { useMemo } from 'react';
+import { Account, Chain, Client, Transport } from 'viem';
+import { useConnectorClient } from 'wagmi';
+
+import { never } from './utils';
+
+const TOP_UP = '200000000000000000'; // 0.2 MATIC
+const MIN_FUNDS = 0.05;
+
+async function getWebIrys(client: Client<Transport, Chain, Account>) {
+  const webIrys = new WebIrys({
+    network: 'mainnet',
+    token: 'matic',
+    wallet: {
+      rpcUrl: 'https://polygon-rpc.com',
+      name: 'ethersv5',
+      provider: new Web3Provider(client.transport),
+    },
+  });
+
+  await webIrys.ready();
+
+  const balance = await webIrys.getBalance(client.account.address);
+
+  if (webIrys.utils.fromAtomic(balance).toNumber() < MIN_FUNDS) {
+    await webIrys.fund(TOP_UP);
+  }
+
+  return webIrys;
+}
+
+export function useIrysUploadHandler() {
+  const { data: client } = useConnectorClient();
+
+  return async (data: unknown) => {
+    const confirm = window.confirm(
+      `We will now update your profile metadata.
+    
+    Please make sure your wallet is connected to the Polygon.`,
+    );
+
+    if (!confirm) {
+      throw new Error('User cancelled');
+    }
+
+    const irys = await getWebIrys(client ?? never('viem Client not found'));
+
+    const serialized = JSON.stringify(data);
+    const tx = await irys.upload(serialized, {
+      tags: [{ name: 'Content-Type', value: 'application/json' }],
+    });
+
+    return `https://arweave.net/${tx.id}`;
+  };
+}
+
+export function useIrysUploader() {
+  const { data: client } = useConnectorClient();
+
+  return useMemo(() => {
+    return new Uploader(async (file: File) => {
+      const irys = await getWebIrys(client ?? never('viem Client not found'));
+
+      const confirm = window.confirm(`Uploading '${file.name}' via the Irys.`);
+
+      if (!confirm) {
+        throw new Error('User cancelled');
+      }
+
+      const receipt = await irys.uploadFile(file);
+
+      return `https://arweave.net/${receipt.id}`;
+    });
+  }, [client]);
+}
