@@ -146,13 +146,13 @@ export default function UseUpdateIRLVal({ session, activeProfile }: { session: S
         <>
         <div>
             <Head>
-                <title>Actually Met IRL</title>
+                <title>Actually Met IRL/Online</title>
             </Head>
             <div>
                 
-                <button onClick={claimMetIRL}>Claim Met IRL</button>
+                <button onClick={claimMetIRL}>Claim Met IRL/Online</button>
                 <p>-----------------</p>
-                <button onClick={confirmMetIRL}>Confirm Met IRL</button>
+                <button onClick={confirmMetIRL}>Confirm Met IRL/Online</button>
                 <p>-----------------</p>
                 <p>{message}</p>
             </div>
