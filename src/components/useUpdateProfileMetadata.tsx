@@ -1,61 +1,103 @@
 import React from 'react';
-import { useForm, useFieldArray, SubmitHandler } from 'react-hook-form';
 import { MetadataAttributeType, profile } from '@lens-protocol/metadata';
-import { Profile, useSetProfileMetadata } from '@lens-protocol/react-web';
-import { SessionType, useSession as useLensSession, AppId } from "@lens-protocol/react-web";
+import { Profile, Session, SessionType, useSetProfileMetadata } from '@lens-protocol/react-web';
 
 import { useIrysUploadHandler } from '@/utils/useIrysUploader';
-
-interface FormInputs {
-  name: string;
-  bio: string;
-  skills: { id: string; name: string }[];
-  wantToLearns: { id: string; name: string }[];
-  sponsored: boolean;
-}
+import { ProfileCard } from './ProfileCard';
+import FileUploader from './FileUploader';
+import { Button } from "./Button";
 
 type UpdateProfileFormProps = {
   activeProfile: Profile;
+  firstTime: boolean;
+  cardProfile: Profile;
 };
 
-function UpdateProfileForm({ activeProfile }: UpdateProfileFormProps) {
-  const { execute: update, error, loading } = useSetProfileMetadata();
+function UpdateProfileForm({ activeProfile, firstTime, cardProfile }: UpdateProfileFormProps) {
   const uploadMetadata = useIrysUploadHandler();
-  const { control, register, handleSubmit } = useForm<FormInputs>({
-    defaultValues: {
-      name: activeProfile.metadata?.displayName ?? '',
-      bio: activeProfile.metadata?.bio ?? '',
-      skills: [],
-      wantToLearns: [],
-      sponsored: true
+  const { execute: update, error, loading } = useSetProfileMetadata();
+
+  // Retrieve the 'liked' attribute, assuming it exists and is JSON encoded
+  let likes;
+  const likedAttribute = activeProfile.metadata?.attributes?.find(a => a.key === 'liked');
+  if (likedAttribute && likedAttribute.value) {
+      try {
+          // Parse it directly if it exists
+          likes = JSON.parse(likedAttribute.value);
+          if (!Array.isArray(likes)) { // Ensure it's an array
+              likes = [];
+          }
+      } catch (e) {
+          console.error('Error parsing liked attribute:', e);
+          likes = []; // Default to an empty array if there's a parsing error
+      }
+  } else {
+      likes = []; // Initialize as an empty array if the attribute does not exist
+  }
+
+
+  // Example handle to search for
+  const handleToSearch = cardProfile.handle?.fullHandle || 'placeholder';
+  console.log("likes: ", likes)
+  const isHandleLiked = likes.includes(handleToSearch);
+  console.log("handletosearch: ", handleToSearch)
+
+  async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const formData = new FormData(event.currentTarget);
+    const file = formData.get('image') as File;
+
+    const name = formData.get('name') as string;
+    const bio = formData.get('bio') as string;
+    const location = formData.get('location') as string;
+    let likes;
+    const likedAttribute = activeProfile.metadata?.attributes?.find(a => a.key === 'liked');
+    if (likedAttribute && likedAttribute.value) {
+        try {
+            // Parse it directly if it exists
+            likes = JSON.parse(likedAttribute.value);
+            if (!Array.isArray(likes)) { // Ensure it's an array
+                likes = [];
+            }
+        } catch (e) {
+            console.error('Error parsing liked attribute:', e);
+            likes = []; // Default to an empty array if there's a parsing error
+        }
+    } else {
+        likes = []; // Initialize as an empty array if the attribute does not exist
     }
-  });
 
-  const { fields: skillsFields, append: appendSkill, remove: removeSkill } = useFieldArray({
-    control,
-    name: 'skills'
-  });
 
-  const { fields: wantToLearnsFields, append: appendWantToLearn, remove: removeWantToLearn } = useFieldArray({
-    control,
-    name: 'wantToLearns'
-  });
+    let pictureURI = '';
+    if (file && file.size > 0) {
+      const uploadResult = await uploadMetadata(file);
+      console.log("picture uploadresult: ", uploadResult);
+      if (uploadResult) {
+        pictureURI = uploadResult;
+      }
+    }
 
-  const onSubmit: SubmitHandler<FormInputs> = async (data) => {
     const metadata = profile({
-      appId: 'SkillXChange' as AppId,
-      name: data.name,
-      bio: data.bio,
+      appId: "SkillXChange",
+      name,
+      bio,
+      picture: pictureURI,
       attributes: [
         {
-          key: 'skills',
-          value: JSON.stringify(data.skills.map(skill => skill.name)),
+          key: 'location',
+          value: location,
+          type: MetadataAttributeType.STRING,
+        },
+        {
+          key: 'liked',
+          value: JSON.stringify(likes),
           type: MetadataAttributeType.JSON,
         },
         {
-          key: 'wantToLearns',
-          value: JSON.stringify(data.wantToLearns.map(wantToLearn => wantToLearn.name)),
-          type: MetadataAttributeType.JSON,
+          key: "SkillXChange",
+          value: 'SkillXChange',
+          type: MetadataAttributeType.STRING,
         },
       ],
     });
@@ -64,136 +106,209 @@ function UpdateProfileForm({ activeProfile }: UpdateProfileFormProps) {
 
     const result = await update({
       metadataURI,
-      sponsored: data.sponsored,
+      sponsored: formData.get('sponsored') === 'on',
     });
 
     if (result.isFailure()) {
-      console.log(result.error.message);
+      console.error(result.error.message);
       return;
     }
 
     const completion = await result.value.waitForCompletion();
 
     if (completion.isFailure()) {
-      console.log(completion.error.message);
+      console.error(completion.error.message);
       return;
     }
 
     console.log('Profile updated');
-    console.log('this function profile metadata appId (also current session profile, useSession function called before change profile metadata): ', activeProfile.metadata?.bio);
-  };
+      // console.log("ADDING PROFILE TO LIGHTHOUSE FILE.");
+    if(!(Boolean(activeProfile.metadata?.attributes?.some(a => a.key === 'SkillXChange')))){
+      const key = process.env.NEXT_PUBLIC_LIGHTHOUSE_KEY || '';
+      const fhandle = activeProfile.handle?.fullHandle || '';
+      FileUploader({apiKey: key, appendContent: fhandle});
+    }
+  }
+
+  async function likeProfile() {
+    // Copy existing attributes while filtering out the 'liked' attribute to replace it.
+    const existingAttributes = activeProfile.metadata?.attributes?.filter(attr => attr.key !== 'liked') || [];
+    
+    // Update or initialize the 'liked' attribute.
+    let likes;
+    const likedAttribute = activeProfile.metadata?.attributes?.find(a => a.key === 'liked');
+    if (likedAttribute && likedAttribute.value) {
+        try {
+            // Parse it directly if it exists
+            likes = JSON.parse(likedAttribute.value);
+            if (!Array.isArray(likes)) { // Ensure it's an array
+                likes = [];
+            }
+        } catch (e) {
+            console.error('Error parsing liked attribute:', e);
+            likes = []; // Default to an empty array if there's a parsing error
+        }
+    } else {
+        likes = []; // Initialize as an empty array if the attribute does not exist
+    }
+    console.log("likes before push: ", likes)
+    if (!likes.includes(cardProfile.handle?.fullHandle)) {
+        likes.push(cardProfile.handle?.fullHandle);
+    }
+    console.log("likes after push: ", likes)
+    console.log("likes stringified: ", JSON.stringify(likes))
+
+    // // Recreate the 'liked' attribute with the updated list.
+    // const likedMetadataAttribute = {
+    //     key: 'liked',
+    //     value: JSON.stringify(likes),
+    //     type: MetadataAttributeType.JSON
+    // };
+
+    // // Include the updated 'liked' in the new attributes list.
+    // const updatedAttributes = [...existingAttributes, likedMetadataAttribute];
+
+    let picture = '';
+
+    if(activeProfile.metadata?.picture?.__typename=='ImageSet'){
+      picture = activeProfile.metadata?.picture.raw.uri;
+    }
+
+    // Use the existing profile details but update the attributes array.
+    const metadata = profile({
+        appId: "SkillXChange",
+        name: activeProfile.metadata?.displayName || 'name',
+        bio: activeProfile.metadata?.bio || 'bio',
+        picture: picture,
+        attributes: [
+          {
+            key: 'location',
+            value: activeProfile.metadata?.attributes?.find(a => a.key === 'location')?.value || '',
+            type: MetadataAttributeType.STRING,
+          },
+          {
+            key: 'liked',
+            value: JSON.stringify(likes),
+            type: MetadataAttributeType.JSON,
+          },
+          {
+            key: "SkillXChange",
+            value: 'SkillXChange',
+            type: MetadataAttributeType.STRING,
+          },
+        ],
+    });
+
+    const metadataURI = await uploadMetadata(metadata);
+
+    const result = await update({
+        metadataURI,
+        sponsored: true,
+    });
+
+    if (result.isFailure()) {
+        console.error(result.error.message);
+        return;
+    }
+
+    const completion = await result.value.waitForCompletion();
+
+    if (completion.isFailure()) {
+        console.error(completion.error.message);
+        return;
+    }
+
+    console.log('Profile liked');
+    console.log('active profile is: ', activeProfile);
+    
+    // Retrieve the 'liked' attribute, assuming it exists and is JSON encoded
+    let lik;
+    const likAttr = cardProfile.metadata?.attributes?.find(a => a.key === 'liked');
+    if (likAttr && likAttr.value) {
+        try {
+            // Parse it directly if it exists
+            lik = JSON.parse(likAttr.value);
+            if (!Array.isArray(lik)) { // Ensure it's an array
+                lik = [];
+            }
+        } catch (e) {
+            console.error('Error parsing liked attribute:', e);
+            lik = []; // Default to an empty array if there's a parsing error
+        }
+    } else {
+        lik = []; // Initialize as an empty array if the attribute does not exist
+    }
+
+
+    // Example handle to search for
+    const handleToSearch = activeProfile.handle?.fullHandle || 'placeholder';
+    console.log("handle to search at end of like function: ", handleToSearch);
+    const isHandleLiked = lik.includes(handleToSearch);
+
+    if(isHandleLiked) {
+      //ALERT USER THEY MATCHED
+      window.confirm(
+        `You matched with ${cardProfile.handle?.fullHandle}! Go to your matches page to start the conversation!`,
+      );
+    }
+  }
+
+  async function dislikeProfile() {
+    //Don't have to do anything then, would just switch to next page.
+  }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)}>
-      <div style={{ margin: '20px' }}>
-        <label>
-          Name:
-          <input
-            type="text"
-            placeholder="Your name"
-            required
-            disabled={loading}
-            {...register('name')}
-          />
-        </label>
-      </div>
+    <>
+    {firstTime &&
+    <form onSubmit={onSubmit}>
 
-      <div style={{ margin: '20px' }}>
-        <label>
-          Bio:
-          <textarea
-            rows={3}
-            placeholder="Write a line about you"
-            required
-            style={{ resize: 'none' }}
-            disabled={loading}
-            {...register('bio')}
-          ></textarea>
-        </label>
-      </div>
+      <label>
+        Name:
+        <input type="text" placeholder="Your name" required disabled={loading} name="name" defaultValue={activeProfile.metadata?.displayName ?? ''} />
+      </label>
 
-      <div style={{ margin: '20px' }}>
-        <label>
-          Skills:
-          <input
-            type="text"
-            placeholder="Add a skill and press Enter"
-            onKeyPress={e => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                if (e.currentTarget.value.trim() !== '') {
-                  appendSkill({ id: Date.now().toString(), name: e.currentTarget.value.trim() });
-                  e.currentTarget.value = '';
-                }
-              }
-            }}
-          />
-          {skillsFields.map((item, index) => (
-            <div key={item.id} style={{ marginTop: '5px' }}>
-              {item.name}
-              <button type="button" onClick={() => removeSkill(index)} style={{ marginLeft: '10px' }}>Remove</button>
-            </div>
-          ))}
-        </label>
-      </div>
+      <label>
+        Bio:
+        <textarea rows={3} placeholder="Write a line about you" required style={{ resize: 'none' }} disabled={loading} name="bio" defaultValue={activeProfile.metadata?.bio ?? ''} />
+      </label>
 
-      <div style={{ margin: '20px' }}>
-        <label>
-          Want to Learns:
-          <input
-            type="text"
-            placeholder="Add what you want to learn and press Enter"
-            onKeyPress={e => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                if (e.currentTarget.value.trim() !== '') {
-                  appendWantToLearn({ id: Date.now().toString(), name: e.currentTarget.value.trim() });
-                  e.currentTarget.value = '';
-                }
-              }
-            }}
-          />
-          {wantToLearnsFields.map((item, index) => (
-            <div key={item.id} style={{ marginTop: '5px' }}>
-              {item.name}
-              <button type="button" onClick={() => removeWantToLearn(index)} style={{ marginLeft: '10px' }}>Remove</button>
-            </div>
-          ))}
-        </label>
-      </div>
+      <label>
+        Location:
+        <input type="text" placeholder="Where are you?" required disabled={loading} name="location" defaultValue={activeProfile.metadata?.attributes?.find(a => a.key === 'location')?.value ?? ''} />
+      </label>
 
-      <div style={{ margin: '20px' }}>
-        <label>
-          <input
-            type="checkbox"
-            {...register('sponsored')}
-          />
-          Sponsored
-        </label>
-      </div>
+      <label>
+        Image:
+        <input type="file" name="image" disabled={loading} />
+      </label>
 
-      <div style={{ margin: '20px' }}>
-        <button type="submit" disabled={loading}>
-          {loading ? 'Updating...' : 'Update'}
-        </button>
-      </div>
+      <label>
+        <input type="checkbox" name="sponsored" disabled={loading} defaultChecked />
+        Sponsored
+      </label>
+
+      <button type="submit" disabled={loading}>
+        {loading ? 'Updating...' : 'Update'}
+      </button>
 
       {error && <p>{error.message}</p>}
-    </form>
+    </form>}
+    {!firstTime && 
+    <>
+    <p>{activeProfile.metadata?.attributes?.find(a => a.key === 'liked')?.value}</p>
+    <Button onClick={likeProfile} disabled={activeProfile.handle?.fullHandle==cardProfile.handle?.fullHandle || isHandleLiked}>LIKE</Button> 
+    </>
+    }
+    </>
   );
 }
 
-export function UseSetProfileMetadata() {
-  //pass in session instead of calling uselenssession again.
-  const { data: session } = useLensSession();
-  if (!session || !session.authenticated || !(session.type === SessionType.WithProfile)) return null;
-
+export function UseSetProfileMetadata({ session, firstTime, cardProfile }: { session: Session, firstTime: boolean, cardProfile: Profile }) {
+  if(!session.authenticated || !(session.type === SessionType.WithProfile)) {return null;}
   return (
     <div>
-      <h1>Create your profile!</h1>
-      <div>
-        <UpdateProfileForm activeProfile={session.profile} />
-      </div>
+      <h1><code>useSetProfileMetadata</code></h1>
+      <UpdateProfileForm activeProfile={session.profile} firstTime={firstTime} cardProfile={cardProfile}/>
     </div>
   );
 }

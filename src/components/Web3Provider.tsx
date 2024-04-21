@@ -5,7 +5,7 @@ import { WagmiProvider, createConfig, http } from "wagmi";
 import { polygon, polygonAmoy } from "wagmi/chains";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ConnectKitProvider, getDefaultConfig } from "connectkit";
-import { LensConfig, LensProvider, development, production, AppId } from "@lens-protocol/react-web";
+import { LensConfig, LensProvider, development, production, appId, IStorageProvider, localStorage } from "@lens-protocol/react-web";
 import { bindings } from "@lens-protocol/wagmi";
 
 // connect kit doesn't export the config type, so we create it here
@@ -22,6 +22,8 @@ const appConfigs = {
     } as Partial<ConnectKitConfig>,
     lens: {
       environment: development,
+      appId: appId("SkillXChange"),
+      sources: [appId("SkillXChange")],
       debug: true,
     } as Partial<LensConfig>,
   },
@@ -34,6 +36,8 @@ const appConfigs = {
     } as Partial<ConnectKitConfig>,
     lens: {
       environment: production,
+      appId: appId("SkillXChange"),
+      sources: [appId("SkillXChange")],
     } as Partial<LensConfig>,
   },
 };
@@ -53,9 +57,10 @@ const wagmiConfig = createConfig(
 const queryClient = new QueryClient();
 
 const lensConfig: LensConfig = {
-  params: { profile: { metadataSource: "SkillXChange" as AppId} },
+  params: { profile: { metadataSource: appId("SkillXChange")} },
   environment: production, // or production
   bindings: bindings(wagmiConfig),
+  //storage: localStorage(),
   ...appConfig.lens,
 };
 

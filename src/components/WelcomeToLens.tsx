@@ -11,6 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import Link from 'next/link'
 //import { UserProfileForm } from "./UserProfileForm";
 import { UseSetProfileMetadata } from "./UseUpdateProfileMetadata"
+import { useProfile } from '@lens-protocol/react-web';
 
 
 
@@ -40,6 +41,7 @@ import {
 export function WelcomeToLens() {
   const { isConnected, address } = useWagmiAccount();
   const { data: session } = useLensSession();
+  const { data: theProfile } = useProfile({forHandle: 'lens/satyap'})
   // const [isDialogOpen, setDialogOpen] = useState(false);
   // const [isDialogOpen2, setDialogOpen2] = useState(false);
   // const [registered, setRegistered] = useState(false);
@@ -94,9 +96,13 @@ export function WelcomeToLens() {
   }
 
   //step 3. register user to app
-  if (session && session.authenticated && session.type === SessionType.WithProfile && (session.profile.metadata?.appId == null)) {
+  if (session && session.authenticated && session.type === SessionType.WithProfile && !(Boolean(session.profile.metadata?.attributes?.some(a => a.key === 'SkillXChange')))) {
+    // console.log("skillxchange attr? ", Boolean(session.profile.metadata?.attributes?.some(a => a.key == 'SkillXChange')));
+    // console.log("attr: ", session.profile.metadata?.attributes?.find(a => a.key === 'SkillXChange')?.value);
     return (
       <>
+      {/* {console.log("USER APPID IS: ", session.profile)}
+      {console.log("profile appid is: ", theProfile)} */}
     {/* <Dialog open={isDialogOpen2}>
           <DialogContent style={{ overflowY: 'auto', padding: '20px' }}>
             <DialogHeader>
@@ -104,29 +110,23 @@ export function WelcomeToLens() {
               <p className="mb-4 text-gray-500">Connected lens handle: {session.type === SessionType.WithProfile && session.profile.handle?.fullHandle}</p>
               {/* </DialogTitle>
             </DialogHeader> */}
-            <UseSetProfileMetadata />
+            <UseSetProfileMetadata session={session} firstTime={true} cardProfile={session.profile}/>
           {/* </DialogContent>
         </Dialog> */}
         
         </>
     );
   }
-  if(session && session.type === SessionType.WithProfile){
-  console.log("appid - ", session.profile.metadata?.appId);
-  }
   // step 4. show Profile details
-  if (session && session.type === SessionType.WithProfile && (session.profile.metadata?.appId == 'SkillXChange' || session.profile.metadata?.appId != null)) {
-    console.log("appid is set! - ", session.profile.metadata?.appId);
-    console.log("appid is set! - bio: ", session.profile.metadata?.bio);
+  if (session && session.type === SessionType.WithProfile && Boolean(session.profile.metadata?.attributes?.some(a => a.key === 'SkillXChange'))) {
+    // console.log("appid is set! - ", session.profile.metadata?.appId);
+    // console.log("appid is set! - bio: ", session.profile.metadata?.bio);
     return (
       <>
         <DropdownMenu>
         <DropdownMenuTrigger>
         {session.profile.metadata?.picture?.__typename == 'ImageSet' && <AvatarPicture picture={session.profile.metadata?.picture}/>}
-        {!(session.profile.metadata?.picture?.__typename == 'ImageSet') && <Avatar>
-        <AvatarImage src="" />
-        <AvatarFallback>U</AvatarFallback>
-  </Avatar>}
+        {session.profile.metadata?.picture?.__typename == 'NftImage' && <AvatarPicture picture={session.profile.metadata?.picture}/>}
         </DropdownMenuTrigger>
         <DropdownMenuContent>
         <DropdownMenuLabel>

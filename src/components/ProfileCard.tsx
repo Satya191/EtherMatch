@@ -15,6 +15,8 @@ import {
 
 import { ProfilePicture } from './ProfilePicture';
 
+import { UseSetProfileMetadata } from "./UseUpdateProfileMetadata"
+
 type ProfileCardProps = {
   profile: Profile;
   children?: ReactNode;
@@ -51,7 +53,7 @@ export function ProfileCard({ profile, children }: ProfileCardProps) {
     const { execute: unfollow, error: unfollowError, loading: unfollowLoading } = useUnfollow(); //getting function execute, destructuring
 
   const { metadata } = profile;
-  if(metadata?.appId == null) {return <p>appId is null, bio: {metadata?.bio}</p>}
+  if(!isConnected || !session || !session?.authenticated || !(session.type==SessionType.WithProfile) || ( !(Boolean(session.profile.metadata?.attributes?.some(a => a.key === 'SkillXChange'))))) {return<><p>Sign in and register to the app please!</p><p>{metadata?.attributes?.find(a => a.key === 'location')?.value}</p></>}
 
   const handleFollowOrUnfollow = async () => {
     if (profile.operations.canFollow == TriStateValue.Yes) {
@@ -91,6 +93,7 @@ export function ProfileCard({ profile, children }: ProfileCardProps) {
             )}
             {!metadata && <p>@{profile.handle?.fullHandle}</p>}
             <p>{metadata && metadata.bio}</p>
+            <p>{metadata?.attributes?.find((a) => a.key === 'location')?.value}</p>
         </CardHeader>
         <CardContent>
         
@@ -108,6 +111,10 @@ export function ProfileCard({ profile, children }: ProfileCardProps) {
               }
               {followError && <p>Error following user: {followError.message}</p>}
               {unfollowError && <p>Error unfollowing user: {unfollowError.message}</p>}
+
+        <h1>
+        <UseSetProfileMetadata session={session} firstTime={false} cardProfile={profile}/>
+        </h1>
         </CardContent>
 
         <CardFooter>

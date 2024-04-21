@@ -60,12 +60,20 @@ export default function RootLayout({
             </NavigationMenuLink>
           </Link>
     </NavigationMenuItem>
+    <NavigationMenuItem>
+    <Link href="/matches" legacyBehavior passHref>
+            <NavigationMenuLink className={navigationMenuTriggerStyle()}>
+              Matches
+            </NavigationMenuLink>
+          </Link>
+    </NavigationMenuItem>
 
     </div>
 
 
     </NavigationMenuList>
 </NavigationMenu>
+<WelcomeToLens/>
         </header>
         {children}
       </Web3Provider>
