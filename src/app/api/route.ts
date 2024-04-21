@@ -26,7 +26,7 @@ export async function POST(request) {
         // console.log("before fetch from ipfs");
 
         // Fetch the latest file content
-        const fileResponse = await fetch(`http://gateway.lighthouse.storage/ipfs/${highestFile.cid}`);
+        const fileResponse = await fetch(`https://gateway.lighthouse.storage/ipfs/${highestFile.cid}`);
         // console.log("file response: ", fileResponse);
         // console.log("file response ok? ", fileResponse.ok);
         if (!fileResponse.ok) throw new Error('Failed to fetch the file.');
@@ -83,7 +83,7 @@ export async function GET(request) {
         // console.log("highestfile cid: ", highestFile.cid);
 
         // Fetch the content of the latest file
-        const fileResponse = await fetch(`http://gateway.lighthouse.storage/ipfs/${highestFile.cid}`);
+        const fileResponse = await fetch(`https://gateway.lighthouse.storage/ipfs/${highestFile.cid}`);
         // console.log("fileResponse: ", fileResponse);
         if (!fileResponse.ok) throw new Error('Failed to fetch the file.');
 
