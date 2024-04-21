@@ -10,24 +10,28 @@ import { never } from './utils';
 const TOP_UP = '200000000000000000'; // 0.2 MATIC
 const MIN_FUNDS = 0.05;
 
+// Define a function to check the validity of the client object
+function isValidClient(client: any): client is Client<Transport, Chain, Account> {
+  return client && client.transport && client.account && client.account.address;
+}
+
 async function getWebIrys(client: Client<Transport, Chain, Account>) {
+  if (!isValidClient(client)) {
+    throw new Error("Invalid client object. Missing required properties.");
+  }
+
   const webIrys = new WebIrys({
     network: 'mainnet',
     token: 'matic',
     wallet: {
       rpcUrl: 'https://polygon-rpc.com',
       name: 'ethersv5',
+      // @ts-ignore
       provider: new Web3Provider(client.transport),
     },
   });
 
   await webIrys.ready();
-
-  const balance = await webIrys.getBalance(client.account.address);
-
-  if (webIrys.utils.fromAtomic(balance).toNumber() < MIN_FUNDS) {
-    await webIrys.fund(TOP_UP);
-  }
 
   return webIrys;
 }
@@ -38,6 +42,9 @@ export function useIrysUploadHandler() {
   const { data: client } = useConnectorClient();
 
   return async (data: unknown) => {
+    if (!client) {
+      throw new Error('viem Client not found');
+    }
     const confirm = window.confirm(
       `We will now update your profile metadata.
     
@@ -48,7 +55,7 @@ export function useIrysUploadHandler() {
       throw new Error('User cancelled');
     }
 
-    const irys = await getWebIrys(client ?? never('viem Client not found'));
+    const irys = await getWebIrys(client);
 
     let serialized: string | Buffer | null = null;
 
@@ -80,7 +87,10 @@ export function useIrysUploader() {
 
   return useMemo(() => {
     return new Uploader(async (file: File) => {
-      const irys = await getWebIrys(client ?? never('viem Client not found'));
+      if (!client) {
+        throw new Error('viem Client not found');
+      }
+      const irys = await getWebIrys(client);
 
       const confirm = window.confirm(`Uploading '${file.name}' via the Irys.`);
 

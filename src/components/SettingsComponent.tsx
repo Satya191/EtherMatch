@@ -49,7 +49,7 @@ export default function SettingsComponent() {
   return (
     <>
       <button onClick={handleOpenDialog}>PROFILE SETTINGS</button> {/* Button to open dialog */}
-      <Dialog open={isDialogOpen} onClose={() => setDialogOpen(false)}> {/* Use onClose to close dialog */}
+      <Dialog open={isDialogOpen}> {/* Use onClose to close dialog */}
         <DialogContent style={{ overflowY: 'auto', padding: '20px' }}>
           <p className="mb-4 text-gray-500">Connected lens handle: {session.type === SessionType.WithProfile && session.profile.handle?.fullHandle}</p>
           <UseSetProfileMetadata session={session} firstTime={true} cardProfile={session.profile}/>

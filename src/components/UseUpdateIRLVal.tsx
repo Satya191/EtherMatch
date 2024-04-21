@@ -10,10 +10,18 @@ import { useIrysUploadHandler } from '@/utils/useIrysUploader';
 import { ProfileCard } from './ProfileCard';
 import FileUploader from './FileUploader';
 import { Button } from "./Button";
+import { MetaMaskInpageProvider } from "@metamask/providers";
+
+
 
 const contractAddress = "0x3850151BdC524E0df921e33159d41c9FB4D365bC";
 import contractABI from '../mycontractabi.json'; // Ensure the ABI file is correctly imported
 
+declare global {
+    interface Window{
+      ethereum?:MetaMaskInpageProvider
+    }
+  }
 
 export default function UseUpdateIRLVal({ session, activeProfile }: { session: Session, activeProfile: Profile }) {
     const uploadMetadata = useIrysUploadHandler();

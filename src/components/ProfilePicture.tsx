@@ -55,7 +55,7 @@ export function ProfilePicture({ picture }: ProfilePictureProps) {
   if (!picture) return <FallbackProfilePicture />;
 
   switch (picture.__typename) {
-    case 'ImageSet' || 'NftImage':
+    case 'ImageSet':
       return <RemoteProfilePicture picture={picture} />;
     default:
       return <FallbackProfilePicture />;

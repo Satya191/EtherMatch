@@ -77,9 +77,9 @@ function UpdateProfileForm({ activeProfile, firstTime, cardProfile }: UpdateProf
         pictureURI = uploadResult;
       }
     }
-    let metIrlVal = "false";
-    if(activeProfile.metadata?.attributes?.find(a => a.key === 'metirl')?.value=="true"){
-      metIrlVal = "true";
+    let metIrlVal: 'true' | 'false' = 'false'; // Default to 'false'
+    if (activeProfile.metadata?.attributes?.find(a => a.key === 'metirl')?.value === "true") {
+        metIrlVal = 'true';
     }
     const metadata = profile({
       appId: "SkillXChange",
@@ -184,9 +184,9 @@ function UpdateProfileForm({ activeProfile, firstTime, cardProfile }: UpdateProf
       picture = activeProfile.metadata?.picture.raw.uri;
     }
 
-    let metIrlVal = "false";
-    if(activeProfile.metadata?.attributes?.find(a => a.key === 'metirl')?.value=="true"){
-      metIrlVal = "true";
+    let metIrlVal: 'true' | 'false' = 'false'; // Default to 'false'
+    if (activeProfile.metadata?.attributes?.find(a => a.key === 'metirl')?.value === "true") {
+        metIrlVal = 'true';
     }
 
     // Use the existing profile details but update the attributes array.
