@@ -29,7 +29,7 @@ function FileUploader({ apiKey, appendContent }: FileUploaderParams) {
     
             const data = await response.json();
             // console.log("Server response:", data);
-            alert(`Upload successful. New file: ${data.newFileName}`);
+            // alert(`Upload successful. New file: ${data.newFileName}`);
         } catch (error) {
             console.error("Error during file handling:", error);
             alert("Error during file handling: " + error.message);

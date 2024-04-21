@@ -96,21 +96,6 @@ export function ProfileCard({ profile, children }: ProfileCardProps) {
             <p>{metadata?.attributes?.find((a) => a.key === 'location')?.value}</p>
         </CardHeader>
         <CardContent>
-        
-        
-
-      <hr />
-      <ProfileTickers stats={profile.stats} />
-      {(!isConnected || !session || !(session.type === SessionType.WithProfile)) ? <p>Please sign in and register to follow</p> :
-      <Button style={{ marginTop: '5%'}}
-                onClick={handleFollowOrUnfollow} 
-                disabled={followLoading || unfollowLoading || !(profile.operations.canUnfollow || profile.operations.canFollow == TriStateValue.Yes)}
-              >
-                {profile.operations.canFollow == TriStateValue.Yes ? 'Follow' : 'Unfollow'}
-              </Button>
-              }
-              {followError && <p>Error following user: {followError.message}</p>}
-              {unfollowError && <p>Error unfollowing user: {unfollowError.message}</p>}
 
         <h1>
         <UseSetProfileMetadata session={session} firstTime={false} cardProfile={profile}/>

@@ -77,7 +77,10 @@ function UpdateProfileForm({ activeProfile, firstTime, cardProfile }: UpdateProf
         pictureURI = uploadResult;
       }
     }
-
+    let metIrlVal = "false";
+    if(activeProfile.metadata?.attributes?.find(a => a.key === 'metirl')?.value=="true"){
+      metIrlVal = "true";
+    }
     const metadata = profile({
       appId: "SkillXChange",
       name,
@@ -99,10 +102,17 @@ function UpdateProfileForm({ activeProfile, firstTime, cardProfile }: UpdateProf
           value: 'SkillXChange',
           type: MetadataAttributeType.STRING,
         },
+        {
+          key: "metirl",
+        value: metIrlVal,
+        type: MetadataAttributeType.BOOLEAN,
+      },
       ],
     });
 
+    console.log("metIrlVal: ", metIrlVal);
     const metadataURI = await uploadMetadata(metadata);
+    console.log("metadataURI: ", metadataURI);
 
     const result = await update({
       metadataURI,
@@ -174,6 +184,11 @@ function UpdateProfileForm({ activeProfile, firstTime, cardProfile }: UpdateProf
       picture = activeProfile.metadata?.picture.raw.uri;
     }
 
+    let metIrlVal = "false";
+    if(activeProfile.metadata?.attributes?.find(a => a.key === 'metirl')?.value=="true"){
+      metIrlVal = "true";
+    }
+
     // Use the existing profile details but update the attributes array.
     const metadata = profile({
         appId: "SkillXChange",
@@ -196,10 +211,17 @@ function UpdateProfileForm({ activeProfile, firstTime, cardProfile }: UpdateProf
             value: 'SkillXChange',
             type: MetadataAttributeType.STRING,
           },
+          {
+            key: "metirl",
+          value: metIrlVal,
+          type: MetadataAttributeType.BOOLEAN,
+        },
         ],
     });
 
     const metadataURI = await uploadMetadata(metadata);
+
+    console.log("metirlval: ", metIrlVal);
 
     const result = await update({
         metadataURI,
@@ -260,34 +282,34 @@ function UpdateProfileForm({ activeProfile, firstTime, cardProfile }: UpdateProf
   return (
     <>
     {firstTime &&
-    <form onSubmit={onSubmit}>
+    <form onSubmit={onSubmit} style={{ padding: '20px', maxWidth: '500px', margin: 'auto' }}>
 
-      <label>
+      <label style={{ display: 'block', marginBottom: '10px' }}>
         Name:
-        <input type="text" placeholder="Your name" required disabled={loading} name="name" defaultValue={activeProfile.metadata?.displayName ?? ''} />
+        <input type="text" placeholder="Your name" required disabled={loading} name="name" defaultValue={activeProfile.metadata?.displayName ?? ''} style={{ width: '100%', padding: '8px', margin: '6px 0' }} />
       </label>
 
-      <label>
+      <label style={{ display: 'block', marginBottom: '10px' }}>
         Bio:
-        <textarea rows={3} placeholder="Write a line about you" required style={{ resize: 'none' }} disabled={loading} name="bio" defaultValue={activeProfile.metadata?.bio ?? ''} />
+        <textarea rows={3} placeholder="Write a line about you" required style={{ resize: 'none', width: '100%', padding: '8px', margin: '6px 0' }} disabled={loading} name="bio" defaultValue={activeProfile.metadata?.bio ?? ''} />
       </label>
 
-      <label>
+      <label style={{ display: 'block', marginBottom: '10px' }}>
         Location:
-        <input type="text" placeholder="Where are you?" required disabled={loading} name="location" defaultValue={activeProfile.metadata?.attributes?.find(a => a.key === 'location')?.value ?? ''} />
+        <input type="text" placeholder="Where are you?" required style={{ width: '100%', padding: '8px', margin: '6px 0' }} disabled={loading} name="location" defaultValue={activeProfile.metadata?.attributes?.find(a => a.key === 'location')?.value ?? ''} />
       </label>
 
-      <label>
+      <label style={{ display: 'block', marginBottom: '10px' }}>
         Image:
-        <input type="file" name="image" disabled={loading} />
+        <input type="file" name="image" disabled={loading} style={{ display: 'block', marginTop: '6px' }} />
       </label>
 
-      <label>
-        <input type="checkbox" name="sponsored" disabled={loading} defaultChecked />
+      <label style={{ display: 'block', marginBottom: '15px' }}>
+        <input type="checkbox" name="sponsored" disabled={loading} defaultChecked style={{ marginRight: '6px' }} />
         Sponsored
       </label>
 
-      <button type="submit" disabled={loading}>
+      <button type="submit" disabled={loading} style={{ width: '100%', padding: '10px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
         {loading ? 'Updating...' : 'Update'}
       </button>
 
@@ -295,7 +317,7 @@ function UpdateProfileForm({ activeProfile, firstTime, cardProfile }: UpdateProf
     </form>}
     {!firstTime && 
     <>
-    <p>{activeProfile.metadata?.attributes?.find(a => a.key === 'liked')?.value}</p>
+    {/* <p>{activeProfile.metadata?.attributes?.find(a => a.key === 'liked')?.value}</p> */}
     <Button onClick={likeProfile} disabled={activeProfile.handle?.fullHandle==cardProfile.handle?.fullHandle || isHandleLiked}>LIKE</Button> 
     </>
     }
@@ -307,7 +329,6 @@ export function UseSetProfileMetadata({ session, firstTime, cardProfile }: { ses
   if(!session.authenticated || !(session.type === SessionType.WithProfile)) {return null;}
   return (
     <div>
-      <h1><code>useSetProfileMetadata</code></h1>
       <UpdateProfileForm activeProfile={session.profile} firstTime={firstTime} cardProfile={cardProfile}/>
     </div>
   );

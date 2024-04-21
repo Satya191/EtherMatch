@@ -2,7 +2,7 @@
 'use client'
 import { useEffect, useState } from 'react';
 import { ProfileCard } from '@/components/ProfileCard';
-import { SessionType, useProfile, useSession } from '@lens-protocol/react-web';
+import { useProfile, useSession, SessionType } from '@lens-protocol/react-web';
 
 export default function Feed() {
   const [handles, setHandles] = useState([]);
@@ -44,14 +44,13 @@ export default function Feed() {
   if (!profile) return <p>No profile found</p>;
 
   if(!session || !session.authenticated || session.type!==SessionType.WithProfile || !Boolean(session.profile.metadata?.attributes?.some(a => a.key === 'SkillXChange'))) {return(<h1>Please connect, sign in, and register to continue and find true love!</h1>);}
-
+  console.log("repfeed metirl val: ", profile.metadata?.attributes?.find(a => a.key === 'metirl')?.value)
   return (
     <div className='p-20'>
-      {profile && (
+      {(profile && profile.metadata?.attributes?.find(a => a.key === 'metirl')?.value=="true") && (
         <>
         <ProfileCard profile={profile} />
         <div>
-        <p>-----------------</p>
           <button onClick={handleLike}>NEXT</button>
         </div>
         </>

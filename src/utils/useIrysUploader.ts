@@ -32,6 +32,8 @@ async function getWebIrys(client: Client<Transport, Chain, Account>) {
   return webIrys;
 }
 
+import { Buffer } from 'buffer';
+
 export function useIrysUploadHandler() {
   const { data: client } = useConnectorClient();
 
@@ -48,7 +50,20 @@ export function useIrysUploadHandler() {
 
     const irys = await getWebIrys(client ?? never('viem Client not found'));
 
-    const serialized = JSON.stringify(data);
+    let serialized: string | Buffer | null = null;
+
+    if (data instanceof File) {
+      const tx = await irys.uploadFile(data);
+      return `https://arweave.net/${tx.id}`;
+    } else {
+      // Otherwise, serialize the data as JSON
+      serialized = JSON.stringify(data);
+    }
+
+    if (!serialized) {
+      throw new Error('Failed to serialize data');
+    }
+
     const tx = await irys.upload(serialized, {
       tags: [{ name: 'Content-Type', value: 'application/json' }],
     });
@@ -56,6 +71,9 @@ export function useIrysUploadHandler() {
     return `https://arweave.net/${tx.id}`;
   };
 }
+
+
+
 
 export function useIrysUploader() {
   const { data: client } = useConnectorClient();

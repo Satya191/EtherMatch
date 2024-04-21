@@ -41,26 +41,16 @@ import {
 export function WelcomeToLens() {
   const { isConnected, address } = useWagmiAccount();
   const { data: session } = useLensSession();
-  const { data: theProfile } = useProfile({forHandle: 'lens/satyap'})
-  // const [isDialogOpen, setDialogOpen] = useState(false);
-  // const [isDialogOpen2, setDialogOpen2] = useState(false);
-  // const [registered, setRegistered] = useState(false);
+  const [isDialogOpen2, setDialogOpen2] = useState(false);
 
-  // Automatically open dialog when wallet is connected but Lens session is not authenticated
-  // useEffect(() => {
-  //   if (isConnected && !session?.authenticated) {
-  //     setDialogOpen(true);
-  //   } else {
-  //     setDialogOpen(false);
-  //     if(isConnected && session?.authenticated) {
-  //     if (!registered) {
-  //       setDialogOpen2(true);
-  //     } else {
-  //       setDialogOpen2(false);
-  //     }
-  //     }
-  //   }
-  // }, [isConnected, session, registered]);
+  useEffect(() => {
+    // Update isDialogOpen2 based on session and other conditions
+    if (session && session.authenticated && session.type === SessionType.WithProfile && !(Boolean(session.profile.metadata?.attributes?.some(a => a.key === 'SkillXChange')))) {
+      setDialogOpen2(true); // Open dialog based on condition
+    } else {
+      setDialogOpen2(false); // Close dialog otherwise
+    }
+  }, [session]);
 
   // step 1. connect wallet
   if (!isConnected) {
@@ -101,18 +91,12 @@ export function WelcomeToLens() {
     // console.log("attr: ", session.profile.metadata?.attributes?.find(a => a.key === 'SkillXChange')?.value);
     return (
       <>
-      {/* {console.log("USER APPID IS: ", session.profile)}
-      {console.log("profile appid is: ", theProfile)} */}
-    {/* <Dialog open={isDialogOpen2}>
+    <Dialog open={isDialogOpen2}>
           <DialogContent style={{ overflowY: 'auto', padding: '20px' }}>
-            <DialogHeader>
-    <DialogTitle> */}
-              <p className="mb-4 text-gray-500">Connected lens handle: {session.type === SessionType.WithProfile && session.profile.handle?.fullHandle}</p>
-              {/* </DialogTitle>
-            </DialogHeader> */}
+            <p className="mb-4 text-gray-500">Connected lens handle: {session.type === SessionType.WithProfile && session.profile.handle?.fullHandle}</p>
             <UseSetProfileMetadata session={session} firstTime={true} cardProfile={session.profile}/>
-          {/* </DialogContent>
-        </Dialog> */}
+          </DialogContent>
+        </Dialog>
         
         </>
     );

@@ -67,7 +67,7 @@ export async function POST(request) {
 // GET handler to fetch the content of the latest profiles file
 export async function GET(request) {
     const apiKey = process.env.NEXT_PUBLIC_LIGHTHOUSE_KEY || '';  // Ensure your API key is stored securely
-    console.log("apikey in get: ", apiKey);
+    // console.log("apikey in get: ", apiKey);
     // return NextResponse.json({ message: "successful get request" }, { status: 200 });
     try {
         // console.log("INSIDE GET HANDLER");
@@ -88,7 +88,7 @@ export async function GET(request) {
         if (!fileResponse.ok) throw new Error('Failed to fetch the file.');
 
         const fileData = await fileResponse.text();
-        console.log("fileData: ", fileData);
+        // console.log("fileData: ", fileData);
         const profiles = fileData.split('\n').filter(line => line.trim() !== ''); // Assuming each line is a handle
         return NextResponse.json({ message: "successful get request", profiles }, { status: 200 });
     } catch (error) {

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { ProfileCard } from '@/components/ProfileCard';
 import { Profile, SessionType, useProfile, useSession } from '@lens-protocol/react-web';
+import UseUpdateIRLVal from '@/components/UseUpdateIRLVal';
 
 export default function Feed() {
   const [handles, setHandles] = useState([]);
@@ -102,13 +103,19 @@ export default function Feed() {
   if (profileLoading) return <p>Loading...</p>;
   if (!profile) return <p>No profile found</p>;
 
+  if(!session || !session.authenticated || session.type!==SessionType.WithProfile || !Boolean(session.profile.metadata?.attributes?.some(a => a.key === 'SkillXChange'))) {return(<h1>Please connect, sign in, and register to continue and find true love!</h1>);}
+
   return (
     <div className='p-20'>
-      {profile && (
+      {profile && session && (
         <>
-          {isMatched(profile) ? <ProfileCard profile={profile} />: <h1>Not a match with {profile.handle?.fullHandle}, click next</h1>}
+          {isMatched(profile) ? <div><ProfileCard profile={profile} /> <UseUpdateIRLVal session={ session } activeProfile={profile}/></div> : <h1>Not a match with {profile.handle?.fullHandle}, click next</h1>}
           <div>
+          <p>-----------------</p>
             <button onClick={handleLike}>NEXT</button>
+          </div>
+          <div>
+          {/* <button onClick={handleLike}>MESSAGE</button> */}
           </div>
         </>
       )}

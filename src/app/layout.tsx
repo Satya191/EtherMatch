@@ -42,7 +42,7 @@ export default function RootLayout({
   <NavigationMenuItem>
     <Link href="/" legacyBehavior passHref>
             <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-              SkillXChange
+              EtherMatch
             </NavigationMenuLink>
           </Link>
     </NavigationMenuItem>
@@ -64,6 +64,13 @@ export default function RootLayout({
     <Link href="/matches" legacyBehavior passHref>
             <NavigationMenuLink className={navigationMenuTriggerStyle()}>
               Matches
+            </NavigationMenuLink>
+          </Link>
+    </NavigationMenuItem>
+    <NavigationMenuItem>
+    <Link href="/repfeed" legacyBehavior passHref>
+            <NavigationMenuLink className={navigationMenuTriggerStyle()}>
+              Reputable Users Feed
             </NavigationMenuLink>
           </Link>
     </NavigationMenuItem>
